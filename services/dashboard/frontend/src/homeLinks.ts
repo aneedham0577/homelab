@@ -163,7 +163,7 @@ export const BUILTIN_HOME_LINKS: BuiltinHomeLink[] = [
         title: 'Pi-hole',
         description: 'Network-wide ad blocking and DNS management',
         kind: 'external',
-        url: (h) => `https://${h.pihole || ''}/admin`,
+        url: (h) => `https://${h.pihole || ''}/admin/`,
         role: 'pihole-user',
         color: 'primary',
         iconKey: 'logo',

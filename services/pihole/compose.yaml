@@ -31,7 +31,10 @@ services:
       - "traefik.http.routers.pihole.rule=Host(`${PIHOLE_SERVICE_NAME}.${HOMELAB_HOSTNAME}`)"
       - "traefik.http.routers.pihole.entrypoints=websecure"
       - "traefik.http.routers.pihole.tls=true"
-      - "traefik.http.routers.pihole.middlewares=authentik-auth@file"
+      - "traefik.http.middlewares.pihole-admin-redirect.redirectregex.regex=^https?://[^/]+/admin$$"
+      - "traefik.http.middlewares.pihole-admin-redirect.redirectregex.replacement=/admin/"
+      - "traefik.http.middlewares.pihole-admin-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.pihole.middlewares=pihole-admin-redirect,authentik-auth@file"
       - "traefik.http.services.pihole.loadbalancer.server.port=80"
     depends_on:
       unbound:
