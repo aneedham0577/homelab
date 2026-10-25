@@ -43,9 +43,9 @@ systemctl list-timers homelab-backup.timer pacman-sync.timer --all
 docker exec -u www-data nextcloud php occ config:system:get maintenance_window_start
 ```
 
-Unit templates live in [`systemd/system/`](../systemd/system/) and use `${PROJECT_ROOT}`, `${PUID}`, `${PGID}` (from `.env`) plus `${PYTHON}` (detected at install). Setup expands them with `substitute_env_vars`, installs under `/etc/systemd/system/`, and adds your user to the `docker` group when needed (re-entering the group for the same setup run). You get a y/n prompt first so you can skip this on a non-server / dev machine. The host API unit runs `tsx server.ts` from `services/dashboard/host-api` after `npm install`.
+Unit templates live in [`services/host/systemd/system/`](../services/host/systemd/system/) and use `${PROJECT_ROOT}`, `${PUID}`, `${PGID}` (from `.env`) plus `${PYTHON}` (detected at install). Setup expands them with `substitute_env_vars`, installs under `/etc/systemd/system/`, and adds your user to the `docker` group when needed (re-entering the group for the same setup run). You get a y/n prompt when running host setup (`python3 setup.py setup -s host`) so you can skip this on a non-server / dev machine. The host API unit runs `tsx server.ts` from `services/dashboard/host-api` after `npm install`.
 
-If the clock is not synchronized, copy or adapt [`systemd/timesyncd.conf`](../systemd/timesyncd.conf) and run `sudo systemctl restart systemd-timesyncd`. See the [systemd wiki](https://wiki.archlinux.org/title/Systemd#Basic_systemctl_usage).
+If the clock is not synchronized, copy or adapt [`services/host/systemd/timesyncd.conf`](../services/host/systemd/timesyncd.conf) and run `sudo systemctl restart systemd-timesyncd`. See the [systemd wiki](https://wiki.archlinux.org/title/Systemd#Basic_systemctl_usage).
 
 ### 3\. ⚡ Run the Setup Script
 

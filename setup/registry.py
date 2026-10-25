@@ -14,6 +14,7 @@ def get_services() -> list[Service]:
     from services.gatus.setup import service as gatus
     from services.gotify.setup import service as gotify
     from services.headscale.setup import service as headscale
+    from services.host.setup import service as host
     from services.immich.setup import service as immich
     from services.nextcloud.setup import service as nextcloud
     from services.ollama.setup import service as ollama
@@ -26,8 +27,9 @@ def get_services() -> list[Service]:
     from services.unbound.setup import service as unbound
     from services.vaultwarden.setup import service as vaultwarden
 
-    # Order: infra → auth/ldap → mail → files/photos → vpn → monitoring → apps
+    # Order: host units → infra → auth/ldap → mail → files/photos → vpn → monitoring → apps
     return [
+        host,
         traefik,
         restic,
         unbound,
