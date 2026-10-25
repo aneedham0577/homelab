@@ -231,11 +231,25 @@ def ensure_restic_repository(
         return True
 
     step("Initializing Restic repository...")
-    code = run_restic(["init"], env=env)
-    if code == 0:
+    cmd = _restic_argv(["init"])
+    step(f"$ {' '.join(cmd)}")
+    proc = subprocess.run(
+        cmd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if proc.returncode == 0:
         ok("Restic repository initialized")
         return True
-    error(f"restic init failed (exit {code}). Check credentials / bucket.")
+    if "already initialized" in (proc.stderr or "") or "already initialized" in (proc.stdout or ""):
+        ok("Restic repository already initialized")
+        return True
+
+    if proc.stderr:
+        print(proc.stderr.strip(), file=sys.stderr)
+    error(f"restic init failed (exit {proc.returncode}). Check credentials / bucket.")
     return False
 
 
