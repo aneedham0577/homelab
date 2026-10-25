@@ -7,7 +7,6 @@ from setup.service import Service
 def get_services() -> list[Service]:
     from services.authentik.setup import service as authentik
     from services.alerts.setup import service as alerts
-    from services.clipcascade.setup import service as clipcascade
     from services.dashboard.setup import service as dashboard
     from services.ddclient.setup import service as ddclient
     from services.dockhand.setup import service as dockhand
@@ -49,5 +48,4 @@ def get_services() -> list[Service]:
         rustdesk,
         ddclient,
         ollama,
-        clipcascade,
     ]

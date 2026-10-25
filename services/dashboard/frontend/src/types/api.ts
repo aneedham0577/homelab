@@ -34,7 +34,6 @@ export interface ConfigResponse {
     calWebHostname?: string;
     immichWebHostname?: string;
     mailWebHostname?: string;
-    clipcascadeWebHostname?: string;
     homelabHostname?: string;
 }
 

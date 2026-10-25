@@ -107,7 +107,6 @@ app.get('/api/config', (req: Request, res: Response) => {
         calWebHostname: config.calWebHostname,
         immichWebHostname: config.immichWebHostname,
         mailWebHostname: config.mailWebHostname,
-        clipcascadeWebHostname: config.clipcascadeWebHostname,
         homelabHostname: config.homelabHostname,
         disableLocalAuth: config.disableLocalAuth,
         ssoEnabled: config.ssoEnabled

@@ -251,16 +251,6 @@ export const BUILTIN_HOME_LINKS: BuiltinHomeLink[] = [
         iconKey: 'logo',
         logoAlt: 'Stalwart',
     },
-    {
-        id: 'external-clipcascade',
-        title: 'ClipCascade',
-        description: 'Cross-platform clipboard synchronization',
-        kind: 'external',
-        url: (h) => `https://${h.clipcascade || ''}`,
-        color: 'primary',
-        iconKey: 'logo',
-        logoAlt: 'ClipCascade',
-    },
 ];
 
 export function resolveBuiltinLinks(
