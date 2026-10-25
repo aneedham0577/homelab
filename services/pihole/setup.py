@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
+import shutil
 
 from setup.service import Service, VolumeDir
+from setup.ui import ok, warn
+from setup.utils import docker_exec, gen_secret, wait_for_container_healthy
 
 
 class PiholeService(Service):
@@ -17,6 +21,29 @@ class PiholeService(Service):
             VolumeDir("./services/pihole/volumes/logs", uid=puid, gid=pgid, mode=0o700),
         ]
         super().setup(env)
+        gen_secret("pihole_admin_password", 32)
+
+    def postsetup(self, env: dict) -> None:
+        if not shutil.which("docker"):
+            return
+        pw_file = Path("./volumes/secrets/pihole_admin_password")
+        if not pw_file.is_file():
+            warn("pihole_admin_password missing; skip Pi-hole admin password sync")
+            return
+        password = pw_file.read_text(encoding="utf-8").strip()
+        if not password:
+            return
+
+        if not wait_for_container_healthy("pihole", timeout=60):
+            warn("Pi-hole container not healthy; skip admin password sync")
+            return
+
+        # pihole setpassword takes password directly or via non-interactive argument
+        out = docker_exec("pihole", "pihole", "setpassword", password, check=False)
+        if "Password reset" in out or "Password changed" in out or "New password set" in out or out == "":
+            ok("Pi-hole admin password synchronized")
+        else:
+            warn(f"Pi-hole setpassword output: {out}")
 
 
 service = PiholeService()

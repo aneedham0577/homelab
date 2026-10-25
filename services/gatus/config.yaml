@@ -166,6 +166,8 @@ endpoints:
     # Root path 403s when the Host header isn't the admin domain; the login
     # page is always an unauthenticated 200.
     url: "http://pihole:80/admin/login"
+    headers:
+      Host: "${PIHOLE_SERVICE_NAME}.${HOMELAB_HOSTNAME}"
     interval: 30s
     conditions:
       - "[STATUS] == 200"

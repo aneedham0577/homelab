@@ -18,7 +18,6 @@ services:
       - FTLCONF_dns_listeningMode=all
       - FTLCONF_webserver_port=80
       - DNSMASQ_LISTENING=all
-      - FTLCONF_webserver_api_password=
       - FTLCONF_misc_dnsmasq_lines=address=/.${HOMELAB_HOSTNAME}/${HOMELAB_IP_ADDRESS}
       - FTLCONF_dns_hosts=${HOMELAB_IP_ADDRESS} ${HOMELAB_HOSTNAME};
     volumes:
