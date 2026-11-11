@@ -18,12 +18,32 @@ import {
     TableHead,
     TableRow,
     Paper,
-    Chip
+    Chip,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    FormControlLabel,
+    Checkbox,
+    Divider
 } from '@mui/material';
 import { PlayArrow as PlayIcon, Settings as SettingsIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
-import GameSettingsDialog, { FieldDefinition, DialogConfig } from './GameSettingsDialog';
 import { PoopleResultState, GameStatus, PoopleRequest } from '../types/api';
 import { resultsCardContentSx, resultsCardSx, resultsColumnSx, resultsScrollBodySx } from './puzzleResultsSx';
+
+interface PresetConfig {
+    maxDepth: number;
+    maxSolutions: number;
+}
+
+interface GameConfig extends PresetConfig {
+    preset: number;
+    excludeUncommonWords: boolean;
+}
 
 interface PoopleGameProps {
     gameStatus: GameStatus | null;
@@ -35,14 +55,6 @@ interface PoopleGameProps {
     showError: (message: string) => void;
     results: PoopleResultState | null;
     onLoadMore: (fileType: string) => Promise<void>;
-}
-
-interface PoopleConfig {
-    [key: string]: string | number | boolean;
-    preset: number;
-    maxDepth: number;
-    excludeUncommonWords: boolean;
-    maxSolutions: number;
 }
 
 const PoopleResults = React.memo(({
@@ -170,60 +182,44 @@ const PoopleGame = ({
     const [endWord, setEndWord] = useState('POOP');
     const [settingsOpen, setSettingsOpen] = useState(false);
 
-    const [config, setConfig] = useState<PoopleConfig>({
+    const [config, setConfig] = useState<GameConfig>({
         preset: 1,
         maxDepth: 10,
-        excludeUncommonWords: true,
-        maxSolutions: 1000
+        maxSolutions: 1000,
+        excludeUncommonWords: true
     });
+    const [tempConfig, setTempConfig] = useState<GameConfig>(config);
 
-    const settingsFields: FieldDefinition[] = useMemo(() => [
-        {
-            name: 'preset',
-            label: 'Preset',
-            type: 'select',
-            options: [
-                { value: 1, label: '1 - Default (Depth 10, Common words)' },
-                { value: 2, label: '2 - Fast (Depth 10, First 100)' },
-                { value: 3, label: '3 - Exhaustive (Depth 10, All words)' },
-                { value: 0, label: '0 - Custom' }
-            ]
-        },
-        {
-            name: 'maxDepth',
-            label: 'Max Depth (words)',
-            type: 'number',
-            min: 2,
-            max: 20,
-            disabled: (cfg) => cfg.preset !== 0
-        },
-        {
-            name: 'maxSolutions',
-            label: 'Max Solutions Limit',
-            type: 'number',
-            min: 10,
-            max: 10000,
-            disabled: (cfg) => cfg.preset !== 0
-        },
-        {
-            name: 'excludeUncommonWords',
-            label: 'Exclude Uncommon Words',
-            type: 'checkbox'
+    // Preset configurations matching Letter Boxed pattern
+    const presetConfigs = useMemo<Record<number, PresetConfig>>(() => ({
+        1: { maxDepth: 10, maxSolutions: 1000 },
+        2: { maxDepth: 10, maxSolutions: 100 },
+        3: { maxDepth: 10, maxSolutions: 1000 }
+    }), []);
+
+    const getCurrentConfig = useCallback((): GameConfig => {
+        if (config.preset === 0) {
+            return config;
         }
-    ], []);
+        return {
+            ...presetConfigs[config.preset],
+            preset: config.preset,
+            excludeUncommonWords: config.excludeUncommonWords
+        };
+    }, [config, presetConfigs]);
 
-    const handleStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleStartChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
         setStartWord(val);
         if (val.length === 4 && (!endWord || endWord.length !== 4)) {
             setEndWord('POOP');
         }
-    };
+    }, [endWord]);
 
-    const handleEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleEndChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
         setEndWord(val);
-    };
+    }, []);
 
     const handleSolve = useCallback(async () => {
         if (!startWord.trim()) {
@@ -242,19 +238,20 @@ const PoopleGame = ({
             return;
         }
 
+        const currentConfig = getCurrentConfig();
         const requestData: PoopleRequest = {
             startWord: startWord.trim(),
             endWord: effectiveEnd,
             preset: config.preset,
             excludeUncommonWords: config.excludeUncommonWords,
-            maxDepth: config.maxDepth,
-            maxSolutions: config.maxSolutions,
+            maxDepth: currentConfig.maxDepth,
+            maxSolutions: currentConfig.maxSolutions,
             start: 0,
             end: 100
         };
 
         await onSolve('poople', requestData);
-    }, [startWord, endWord, config, onSolve, showError]);
+    }, [startWord, endWord, config, getCurrentConfig, onSolve, showError]);
 
     const handleClear = useCallback(() => {
         setStartWord('');
@@ -266,7 +263,59 @@ const PoopleGame = ({
         navigator.clipboard.writeText(text);
     }, []);
 
-    const canSolve = startWord.length > 0 && endWord.length === startWord.length && !isLoading && !isSolving && (gameStatus ? gameStatus.healthy : true);
+    const isCustom = tempConfig.preset === 0;
+    const tempConfigRecord = tempConfig as unknown as Record<string, unknown>;
+
+    const handleOpenSettings = () => {
+        setTempConfig(config);
+        setSettingsOpen(true);
+    };
+
+    const handleTempConfigChange = (field: keyof GameConfig, value: number | boolean | string) => {
+        setTempConfig(prev => ({
+            ...prev,
+            [field]: value
+        } as unknown as GameConfig));
+    };
+
+    const handlePresetChange = (preset: number) => {
+        if (preset === 0) {
+            setTempConfig(prev => ({
+                ...prev,
+                preset: 0
+            }));
+        } else {
+            const pConfig = presetConfigs[preset];
+            setTempConfig(prev => ({
+                ...prev,
+                preset,
+                ...pConfig
+            }));
+        }
+    };
+
+    const handleSaveSettings = () => {
+        const finalConfig = { ...tempConfig };
+        if (finalConfig.preset === 0) {
+            let maxD = parseInt(String(finalConfig.maxDepth), 10);
+            if (isNaN(maxD) || maxD < 2) maxD = config.maxDepth || 10;
+            else if (maxD > 20) maxD = 20;
+            finalConfig.maxDepth = maxD;
+
+            let maxS = parseInt(String(finalConfig.maxSolutions), 10);
+            if (isNaN(maxS) || maxS < 10) maxS = config.maxSolutions || 1000;
+            else if (maxS > 10000) maxS = 10000;
+            finalConfig.maxSolutions = maxS;
+        }
+        setConfig(finalConfig);
+        setSettingsOpen(false);
+    };
+
+    const canSolve = startWord.length > 0 &&
+                     endWord.length === startWord.length &&
+                     !isLoading &&
+                     !isSolving &&
+                     (gameStatus ? gameStatus.healthy : true);
 
     return (
         <Grid container spacing={2} sx={{ height: { xs: 'auto', md: '100%' }, minHeight: 0, flexGrow: 1 }}>
@@ -279,7 +328,7 @@ const PoopleGame = ({
                                 New Game
                             </Button>
                             <Tooltip title="Settings">
-                                <IconButton onClick={() => setSettingsOpen(true)} size="small">
+                                <IconButton onClick={handleOpenSettings} size="small">
                                     <SettingsIcon fontSize="small" />
                                 </IconButton>
                             </Tooltip>
@@ -380,19 +429,114 @@ const PoopleGame = ({
                             {isSolving ? 'Cancel' : 'Solve'}
                         </Button>
 
-                        <GameSettingsDialog
-                            open={settingsOpen}
-                            onClose={() => setSettingsOpen(false)}
-                            onSave={(newConfig: DialogConfig) => setConfig({
-                                preset: Number(newConfig.preset),
-                                maxDepth: Number(newConfig.maxDepth || 10),
-                                excludeUncommonWords: Boolean(newConfig.excludeUncommonWords),
-                                maxSolutions: Number(newConfig.maxSolutions || 1000)
-                            })}
-                            title="Poople Settings"
-                            config={config}
-                            fields={settingsFields}
-                        />
+                        {/* Settings Dialog matching Letter Boxed pattern */}
+                        <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="xs" fullWidth>
+                            <DialogTitle>Poople Settings</DialogTitle>
+                            <DialogContent>
+                                <Stack spacing={2} sx={{ mt: 1 }}>
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Solver Preset</InputLabel>
+                                        <Select
+                                            value={tempConfig.preset}
+                                            label="Solver Preset"
+                                            onChange={(e) => handlePresetChange(Number(e.target.value))}
+                                        >
+                                            <MenuItem value={1}>1: Default (Depth 10, Common words)</MenuItem>
+                                            <MenuItem value={2}>2: Fast (Depth 10, First 100)</MenuItem>
+                                            <MenuItem value={3}>3: Exhaustive (Depth 10, All words)</MenuItem>
+                                            <MenuItem value={0}>Custom</MenuItem>
+                                        </Select>
+                                    </FormControl>
+
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={tempConfig.excludeUncommonWords}
+                                                onChange={(e) => handleTempConfigChange('excludeUncommonWords', e.target.checked)}
+                                            />
+                                        }
+                                        label="Exclude Uncommon Words"
+                                    />
+
+                                    <Divider />
+
+                                    <Box>
+                                        <Typography variant="subtitle2" gutterBottom>
+                                            Custom Settings {!isCustom && '(read-only)'}
+                                        </Typography>
+
+                                        <Grid container spacing={1.5}>
+                                            <Grid size={12}>
+                                                <TextField
+                                                    label="Max Depth (Words)"
+                                                    type="number"
+                                                    size="small"
+                                                    value={tempConfigRecord.maxDepth === undefined || tempConfigRecord.maxDepth === '' ? '' : (tempConfigRecord.maxDepth as number)}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val === '') {
+                                                            handleTempConfigChange('maxDepth', '');
+                                                        } else {
+                                                            const num = parseInt(val, 10);
+                                                            if (!isNaN(num)) {
+                                                                handleTempConfigChange('maxDepth', num);
+                                                            }
+                                                        }
+                                                    }}
+                                                    onBlur={() => {
+                                                        let num = parseInt(String(tempConfig.maxDepth), 10);
+                                                        if (isNaN(num)) {
+                                                            num = config.maxDepth || 10;
+                                                        } else {
+                                                            num = Math.max(2, Math.min(20, num));
+                                                        }
+                                                        handleTempConfigChange('maxDepth', num);
+                                                    }}
+                                                    fullWidth
+                                                    disabled={!isCustom}
+                                                    slotProps={{ htmlInput: { min: 2, max: 20 } }}
+                                                />
+                                            </Grid>
+                                            <Grid size={12}>
+                                                <TextField
+                                                    label="Max Solutions Limit"
+                                                    type="number"
+                                                    size="small"
+                                                    value={tempConfigRecord.maxSolutions === undefined || tempConfigRecord.maxSolutions === '' ? '' : (tempConfigRecord.maxSolutions as number)}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val === '') {
+                                                            handleTempConfigChange('maxSolutions', '');
+                                                        } else {
+                                                            const num = parseInt(val, 10);
+                                                            if (!isNaN(num)) {
+                                                                handleTempConfigChange('maxSolutions', num);
+                                                            }
+                                                        }
+                                                    }}
+                                                    onBlur={() => {
+                                                        let num = parseInt(String(tempConfig.maxSolutions), 10);
+                                                        if (isNaN(num)) {
+                                                            num = config.maxSolutions || 1000;
+                                                        } else {
+                                                            num = Math.max(10, Math.min(10000, num));
+                                                        }
+                                                        handleTempConfigChange('maxSolutions', num);
+                                                    }}
+                                                    fullWidth
+                                                    disabled={!isCustom}
+                                                    slotProps={{ htmlInput: { min: 10, max: 10000 } }}
+                                                />
+                                            </Grid>
+                                        </Grid>
+                                    </Box>
+                                </Stack>
+                            </DialogContent>
+                            <DialogActions>
+                                <Button onClick={() => setSettingsOpen(false)}>Cancel</Button>
+                                <Button onClick={handleSaveSettings} variant="contained">Save</Button>
+                            </DialogActions>
+                        </Dialog>
                     </CardContent>
                 </Card>
             </Grid>
