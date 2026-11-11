@@ -1,52 +1,44 @@
-import React, { useState } from 'react';
-import { Box, Chip, TextField, Typography } from '@mui/material';
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, TextField, Typography } from '@mui/material';
 
 interface ExcludedWordsInputProps {
     words: string[];
     onChange: (words: string[]) => void;
     label?: string;
     helperText?: string;
+    rows?: number;
 }
 
 export const ExcludedWordsInput: React.FC<ExcludedWordsInputProps> = ({
     words,
     onChange,
     label = 'Excluded Words',
-    helperText = 'Type words to exclude and press Enter or comma'
+    helperText = 'One word per line. Case-insensitive.',
+    rows = 5
 }) => {
-    const [inputValue, setInputValue] = useState('');
+    const [text, setText] = useState(() => words.join('\n'));
+    const isEditingRef = useRef(false);
 
-    const addWord = (val: string) => {
-        const cleaned = val.trim().toLowerCase();
-        if (cleaned && /^[a-z]+$/.test(cleaned) && !words.includes(cleaned)) {
-            onChange([...words, cleaned]);
+    // Only update from parent props if not currently being actively edited by the user
+    useEffect(() => {
+        if (!isEditingRef.current) {
+            setText(words.join('\n'));
         }
+    }, [words]);
+
+    const syncToParent = (raw: string) => {
+        const lines = raw.split('\n');
+        const parsed = lines
+            .map((line) => line.trim().toLowerCase())
+            .filter((line) => line.length > 0 && /^[a-z]+$/.test(line));
+        onChange(parsed);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' || e.key === ',') {
-            e.preventDefault();
-            addWord(inputValue);
-            setInputValue('');
-        } else if (e.key === 'Backspace' && !inputValue && words.length > 0) {
-            onChange(words.slice(0, words.length - 1));
-        }
-    };
-
-    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-        const text = e.clipboardData.getData('text');
-        if (text && (text.includes(',') || text.includes(' ') || text.includes('\n'))) {
-            e.preventDefault();
-            const tokens = text.split(/[\s,;]+/).map((t) => t.trim().toLowerCase()).filter((t) => /^[a-z]+$/.test(t));
-            if (tokens.length > 0) {
-                const combined = Array.from(new Set([...words, ...tokens]));
-                onChange(combined);
-            }
-        }
-    };
-
-    const handleDelete = (wordToDelete: string) => {
-        onChange(words.filter((w) => w !== wordToDelete));
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+        isEditingRef.current = true;
+        const val = e.target.value;
+        setText(val);
+        syncToParent(val);
     };
 
     return (
@@ -54,63 +46,35 @@ export const ExcludedWordsInput: React.FC<ExcludedWordsInputProps> = ({
             <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
                 {label}
             </Typography>
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 0.75,
-                    alignItems: 'center',
-                    p: 1,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    backgroundColor: 'background.paper',
-                    minHeight: 48
+            <TextField
+                multiline
+                rows={rows}
+                fullWidth
+                size="small"
+                placeholder={'e.g.\nadze\naa\nqat'}
+                value={text}
+                onChange={handleChange}
+                onFocus={() => {
+                    isEditingRef.current = true;
                 }}
-            >
-                {words.map((word) => (
-                    <Chip
-                        key={word}
-                        label={word}
-                        size="small"
-                        onDelete={() => handleDelete(word)}
-                        color="secondary"
-                        variant="outlined"
-                    />
-                ))}
-                <TextField
-                    variant="standard"
-                    size="small"
-                    placeholder={words.length === 0 ? 'e.g. adze, aa, qat' : 'Add another...'}
-                    value={inputValue}
-                    onChange={(e) => {
-                        const val = e.target.value;
-                        if (val.endsWith(',') || val.endsWith(' ')) {
-                            addWord(val.slice(0, -1));
-                            setInputValue('');
-                        } else {
-                            setInputValue(val);
-                        }
-                    }}
-                    onKeyDown={handleKeyDown}
-                    onPaste={handlePaste}
-                    onBlur={() => {
-                        if (inputValue.trim()) {
-                            addWord(inputValue);
-                            setInputValue('');
-                        }
-                    }}
-                    InputProps={{
-                        disableUnderline: true
-                    }}
-                    sx={{ flexGrow: 1, minWidth: 120 }}
-                />
-            </Box>
-            {helperText && (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                    {helperText}
-                </Typography>
-            )}
+                onBlur={() => {
+                    isEditingRef.current = false;
+                    syncToParent(text);
+                }}
+                helperText={helperText}
+                slotProps={{
+                    htmlInput: {
+                        style: {
+                            fontFamily: 'monospace',
+                            fontSize: '0.875rem'
+                        },
+                        autoComplete: 'off',
+                        autoCorrect: 'off',
+                        autoCapitalize: 'off',
+                        spellCheck: 'false'
+                    }
+                }}
+            />
         </Box>
     );
 };
