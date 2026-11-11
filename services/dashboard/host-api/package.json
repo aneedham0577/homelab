@@ -32,5 +32,9 @@
     "nodemon": "^3.1.10",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.62.1"
+  },
+  "overrides": {
+    "glob": "^14.0.2",
+    "minimatch": "^11.0.1"
   }
 }
