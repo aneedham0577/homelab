@@ -13,6 +13,7 @@ export async function solveSpellingBee(ctx: WordGamesContext, req: Request, res:
             mustIncludeFirstLetter = true,
             reuseLetters = true,
             excludeUncommonWords = false,
+            excludeWords,
             allowAnyLength = false,
             start = 0,
             end = 100
@@ -57,6 +58,18 @@ export async function solveSpellingBee(ctx: WordGamesContext, req: Request, res:
 
         if (excludeUncommonWords) {
             args.push('--exclude-uncommon-words 1');
+        }
+
+        if (Array.isArray(excludeWords) && excludeWords.length > 0) {
+            const cleanList = excludeWords
+                .map((w) => String(w).trim().toLowerCase())
+                .filter((w) => /^[a-z]+$/.test(w))
+                .join(',');
+            if (cleanList) {
+                args.push(`--exclude-words ${cleanList}`);
+            }
+        } else if (typeof excludeWords === 'string' && excludeWords.trim()) {
+            args.push(`--exclude-words ${excludeWords.trim().toLowerCase()}`);
         }
 
         const command = args.join(' ');

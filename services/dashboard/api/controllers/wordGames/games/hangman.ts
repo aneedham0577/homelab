@@ -15,7 +15,8 @@ export async function solveHangman(ctx: WordGamesContext, req: Request, res: Res
             maxDepth = 0,
             autoDepth = false,
             maxGuesses = 6,
-            excludeUncommonWords = false
+            excludeUncommonWords = false,
+            excludeWords
         } = req.body;
 
         if (!req.body || typeof req.body !== 'object') {
@@ -53,6 +54,18 @@ export async function solveHangman(ctx: WordGamesContext, req: Request, res: Res
         ];
         if (isAuto) {
             args.push('--auto-depth');
+        }
+
+        if (Array.isArray(excludeWords) && excludeWords.length > 0) {
+            const cleanList = excludeWords
+                .map((w) => String(w).trim().toLowerCase())
+                .filter((w) => /^[a-z]+$/.test(w))
+                .join(',');
+            if (cleanList) {
+                args.push(`--exclude-words ${cleanList}`);
+            }
+        } else if (typeof excludeWords === 'string' && excludeWords.trim()) {
+            args.push(`--exclude-words ${excludeWords.trim().toLowerCase()}`);
         }
 
         // Use --input format: "pattern;strikes"

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
     Card,
@@ -34,6 +34,8 @@ import {
 import { PlayArrow as PlayIcon, Settings as SettingsIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
 import { PoopleResultState, GameStatus, PoopleRequest } from '../types/api';
 import { resultsCardContentSx, resultsCardSx, resultsColumnSx, resultsScrollBodySx } from './puzzleResultsSx';
+import ExcludedWordsInput from './ExcludedWordsInput';
+import { getGameExcludedWords, saveGameExcludedWords } from '../utils/gameExcludedWords';
 
 interface PresetConfig {
     minWords: number;
@@ -191,6 +193,15 @@ const PoopleGame = ({
         excludeUncommonWords: true
     });
     const [tempConfig, setTempConfig] = useState<GameConfig>(config);
+    const [excludedWords, setExcludedWords] = useState<string[]>([]);
+    const [tempExcludedWords, setTempExcludedWords] = useState<string[]>([]);
+
+    useEffect(() => {
+        getGameExcludedWords('poople').then((words) => {
+            setExcludedWords(words);
+            setTempExcludedWords(words);
+        });
+    }, []);
 
     // Preset configurations matching Letter Boxed pattern
     const presetConfigs = useMemo<Record<number, PresetConfig>>(() => ({
@@ -246,6 +257,7 @@ const PoopleGame = ({
             endWord: effectiveEnd,
             preset: config.preset,
             excludeUncommonWords: config.excludeUncommonWords,
+            excludeWords: excludedWords.length > 0 ? excludedWords : undefined,
             minWords: currentConfig.minWords,
             maxWords: currentConfig.maxWords,
             maxSolutions: currentConfig.maxSolutions,
@@ -254,7 +266,7 @@ const PoopleGame = ({
         };
 
         await onSolve('poople', requestData);
-    }, [startWord, endWord, config, getCurrentConfig, onSolve, showError]);
+    }, [startWord, endWord, config, excludedWords, getCurrentConfig, onSolve, showError]);
 
     const handleClear = useCallback(() => {
         setStartWord('');
@@ -271,6 +283,7 @@ const PoopleGame = ({
 
     const handleOpenSettings = () => {
         setTempConfig(config);
+        setTempExcludedWords(excludedWords);
         setSettingsOpen(true);
     };
 
@@ -323,6 +336,8 @@ const PoopleGame = ({
             finalConfig.maxSolutions = maxS;
         }
         setConfig(finalConfig);
+        setExcludedWords(tempExcludedWords);
+        saveGameExcludedWords('poople', tempExcludedWords);
         setSettingsOpen(false);
     };
 
@@ -471,6 +486,11 @@ const PoopleGame = ({
                                             />
                                         }
                                         label="Exclude Uncommon Words"
+                                    />
+
+                                    <ExcludedWordsInput
+                                        words={tempExcludedWords}
+                                        onChange={setTempExcludedWords}
                                     />
 
                                     <Divider />

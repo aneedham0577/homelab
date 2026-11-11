@@ -15,6 +15,7 @@ export async function solvePoople(ctx: WordGamesContext, req: Request, res: Resp
             maxWords = 10,
             maxDepth,
             excludeUncommonWords = true,
+            excludeWords,
             maxSolutions = 1000,
             start = 0,
             end = 100
@@ -60,6 +61,18 @@ export async function solvePoople(ctx: WordGamesContext, req: Request, res: Resp
 
         if (excludeUncommonWords !== undefined) {
             args.push(`--exclude-uncommon-words ${excludeUncommonWords ? 1 : 0}`);
+        }
+
+        if (Array.isArray(excludeWords) && excludeWords.length > 0) {
+            const cleanList = excludeWords
+                .map((w) => String(w).trim().toLowerCase())
+                .filter((w) => /^[a-z]+$/.test(w))
+                .join(',');
+            if (cleanList) {
+                args.push(`--exclude-words ${cleanList}`);
+            }
+        } else if (typeof excludeWords === 'string' && excludeWords.trim()) {
+            args.push(`--exclude-words ${excludeWords.trim().toLowerCase()}`);
         }
 
         const presetVal = parseInt(preset);

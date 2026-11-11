@@ -32,6 +32,8 @@ import {
 import GameSettingsDialog, { FieldDefinition, DialogConfig } from './GameSettingsDialog';
 import { WordleResultState } from '../types/api';
 import { resultsCardContentSx, resultsCardSx, resultsColumnSx, resultsScrollBodySx } from './puzzleResultsSx';
+import ExcludedWordsInput from './ExcludedWordsInput';
+import { getGameExcludedWords, saveGameExcludedWords } from '../utils/gameExcludedWords';
 
 const pulseKeyframes = keyframes`
   0% {
@@ -507,6 +509,15 @@ const WordleGame = forwardRef<WordleGameRef, WordleGameProps>(({ isLoading, isSo
         maxGuesses: 6,
         excludeUncommonWords: true
     });
+    const [excludedWords, setExcludedWords] = useState<string[]>([]);
+    const [tempExcludedWords, setTempExcludedWords] = useState<string[]>([]);
+
+    useEffect(() => {
+        getGameExcludedWords('wordle').then((words) => {
+            setExcludedWords(words);
+            setTempExcludedWords(words);
+        });
+    }, []);
 
     const guessInputRef = useRef<WordleGuessInputRef>(null);
 
@@ -600,10 +611,11 @@ const WordleGame = forwardRef<WordleGameRef, WordleGameProps>(({ isLoading, isSo
             autoDepth: config.autoDepth,
             maxGuesses: config.maxGuesses,
             excludeUncommonWords: config.excludeUncommonWords ? 1 : 0,
+            excludeWords: excludedWords.length > 0 ? excludedWords : undefined,
             start: 0,
             end: 100
         });
-    }, [wordleGuesses, config, onSolve, createWordleGuess]);
+    }, [wordleGuesses, config, excludedWords, onSolve, createWordleGuess]);
 
     const toggleExistingGuessColor = useCallback((guessIndex: number, letterIndex: number) => {
         setWordleGuesses(prev => prev.map((guess, idx) => {
@@ -627,10 +639,11 @@ const WordleGame = forwardRef<WordleGameRef, WordleGameProps>(({ isLoading, isSo
             autoDepth: config.autoDepth,
             maxGuesses: config.maxGuesses,
             excludeUncommonWords: config.excludeUncommonWords ? 1 : 0,
+            excludeWords: excludedWords.length > 0 ? excludedWords : undefined,
             start: 0,
             end: 100
         });
-    }, [wordleGuesses, config, onSolve]);
+    }, [wordleGuesses, config, excludedWords, onSolve]);
 
     const handleClear = useCallback(() => {
         guessInputRef.current?.setGuess('');
@@ -847,12 +860,24 @@ const WordleGame = forwardRef<WordleGameRef, WordleGameProps>(({ isLoading, isSo
             {/* Settings Dialog */}
             <GameSettingsDialog
                 open={settingsOpen}
-                onClose={() => setSettingsOpen(false)}
-                onSave={handleConfigSave}
+                onClose={() => {
+                    setTempExcludedWords(excludedWords);
+                    setSettingsOpen(false);
+                }}
+                onSave={(newConfig) => {
+                    handleConfigSave(newConfig);
+                    setExcludedWords(tempExcludedWords);
+                    saveGameExcludedWords('wordle', tempExcludedWords);
+                }}
                 title="Wordle Settings"
                 config={config}
                 fields={settingsFields}
-            />
+            >
+                <ExcludedWordsInput
+                    words={tempExcludedWords}
+                    onChange={setTempExcludedWords}
+                />
+            </GameSettingsDialog>
         </Grid>
     );
 });

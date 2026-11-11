@@ -33,6 +33,8 @@ import {
 import { PlayArrow as PlayIcon, Settings as SettingsIcon, ContentCopy as CopyIcon } from '@mui/icons-material';
 import { LetterBoxedResultState, GameStatus } from '../types/api';
 import { resultsCardContentSx, resultsCardSx, resultsColumnSx, resultsScrollBodySx } from './puzzleResultsSx';
+import ExcludedWordsInput from './ExcludedWordsInput';
+import { getGameExcludedWords, saveGameExcludedWords } from '../utils/gameExcludedWords';
 
 interface LetterBoxedGridProps {
     letters: string;
@@ -268,6 +270,15 @@ const LetterBoxedGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, 
         excludeUncommonWords: true
     });
     const [tempConfig, setTempConfig] = useState<GameConfig>(config);
+    const [excludedWords, setExcludedWords] = useState<string[]>([]);
+    const [tempExcludedWords, setTempExcludedWords] = useState<string[]>([]);
+
+    useEffect(() => {
+        getGameExcludedWords('letterboxed').then((words) => {
+            setExcludedWords(words);
+            setTempExcludedWords(words);
+        });
+    }, []);
 
     // Preset configurations
     const presetConfigs = useMemo<Record<number, PresetConfig>>(() => ({
@@ -309,6 +320,7 @@ const LetterBoxedGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, 
             letters: letterBoxedLetters.trim(),
             preset: config.preset,
             excludeUncommonWords: config.excludeUncommonWords,
+            excludeWords: excludedWords.length > 0 ? excludedWords : undefined,
             start: 0,
             end: 100
         };
@@ -322,7 +334,7 @@ const LetterBoxedGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, 
         }
 
         await onSolve('letterboxed', requestData);
-    }, [letterBoxedLetters, config, getCurrentConfig, onSolve, showError]);
+    }, [letterBoxedLetters, config, excludedWords, getCurrentConfig, onSolve, showError]);
 
     const handleClear = useCallback(() => {
         setLetterBoxedLetters('');
@@ -338,6 +350,7 @@ const LetterBoxedGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, 
 
     const handleOpenSettings = () => {
         setTempConfig(config);
+        setTempExcludedWords(excludedWords);
         setSettingsOpen(true);
     };
 
@@ -383,6 +396,8 @@ const LetterBoxedGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, 
             finalConfig.minUniqueLetters = minU;
         }
         setConfig(finalConfig);
+        setExcludedWords(tempExcludedWords);
+        saveGameExcludedWords('letterboxed', tempExcludedWords);
         setSettingsOpen(false);
     };
 
@@ -486,6 +501,11 @@ const LetterBoxedGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, 
                                             />
                                         }
                                         label="Exclude Uncommon Words"
+                                    />
+
+                                    <ExcludedWordsInput
+                                        words={tempExcludedWords}
+                                        onChange={setTempExcludedWords}
                                     />
 
                                     <Divider />

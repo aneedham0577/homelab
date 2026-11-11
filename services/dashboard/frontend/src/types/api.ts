@@ -380,6 +380,7 @@ export interface UserSettings {
     homeRecentIds?: string[];
     homeWidgets?: HomeWidget[];
     homeCards?: HomeCard[];
+    wordGameExcludedWords?: Record<string, string[]>;
     [key: string]: unknown;
 }
 
@@ -548,6 +549,7 @@ export interface LetterBoxedRequest {
     minUniqueLetters?: number;
     pruneRedundantPaths?: number;
     pruneDominatedClasses?: number;
+    excludeWords?: string[];
     start?: number;
     end?: number;
 }
@@ -555,6 +557,7 @@ export interface LetterBoxedRequest {
 export interface SpellingBeeRequest {
     letters: string;
     excludeUncommonWords: boolean;
+    excludeWords?: string[];
     mustIncludeFirstLetter: boolean;
     reuseLetters: boolean;
     start?: number;
@@ -566,6 +569,7 @@ export interface WordleRequest {
     wordLength: number;
     maxDepth: number;
     excludeUncommonWords: boolean;
+    excludeWords?: string[];
     start?: number;
     end?: number;
 }
@@ -591,6 +595,7 @@ export interface HangmanRequest {
     autoDepth?: boolean;
     maxGuesses?: number;
     excludeUncommonWords: boolean;
+    excludeWords?: string[];
     start?: number;
     end?: number;
 }
@@ -619,6 +624,7 @@ export interface PoopleRequest {
     maxWords?: number;
     maxDepth?: number;
     excludeUncommonWords?: boolean;
+    excludeWords?: string[];
     maxSolutions?: number;
     start?: number;
     end?: number;

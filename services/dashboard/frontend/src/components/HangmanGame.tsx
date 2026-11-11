@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box,
     Card,
@@ -30,6 +30,8 @@ import {
 import GameSettingsDialog, { DialogConfig, FieldDefinition } from './GameSettingsDialog';
 import { HangmanResultState, GameStatus } from '../types/api';
 import { resultsCardContentSx, resultsCardSx, resultsColumnSx, resultsScrollBodySx } from './puzzleResultsSx';
+import ExcludedWordsInput from './ExcludedWordsInput';
+import { getGameExcludedWords, saveGameExcludedWords } from '../utils/gameExcludedWords';
 
 interface HangmanResultsProps {
     results: HangmanResultState | null;
@@ -226,6 +228,15 @@ const HangmanGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, onCl
         maxGuesses: 6,
         excludeUncommonWords: true
     });
+    const [excludedWords, setExcludedWords] = useState<string[]>([]);
+    const [tempExcludedWords, setTempExcludedWords] = useState<string[]>([]);
+
+    useEffect(() => {
+        getGameExcludedWords('hangman').then((words) => {
+            setExcludedWords(words);
+            setTempExcludedWords(words);
+        });
+    }, []);
 
     const settingsFields: FieldDefinition[] = [
         {
@@ -313,10 +324,11 @@ const HangmanGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, onCl
             autoDepth: config.autoDepth,
             maxGuesses: config.maxGuesses,
             excludeUncommonWords: config.excludeUncommonWords,
+            excludeWords: excludedWords.length > 0 ? excludedWords : undefined,
             start: 0,
             end: 100
         });
-    }, [pattern, excludedLetters, config, onSolve, showError]);
+    }, [pattern, excludedLetters, config, excludedWords, onSolve, showError]);
 
     const handleClear = useCallback(() => {
         setPattern('');
@@ -504,17 +516,29 @@ const HangmanGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, onCl
             {/* Settings Dialog */}
             <GameSettingsDialog
                 open={settingsOpen}
-                onClose={() => setSettingsOpen(false)}
-                onSave={(newConfig: DialogConfig) => setConfig({
-                    maxDepth: Number(newConfig.maxDepth),
-                    autoDepth: Boolean(newConfig.autoDepth),
-                    maxGuesses: Number(newConfig.maxGuesses) || 6,
-                    excludeUncommonWords: Boolean(newConfig.excludeUncommonWords)
-                })}
+                onClose={() => {
+                    setTempExcludedWords(excludedWords);
+                    setSettingsOpen(false);
+                }}
+                onSave={(newConfig: DialogConfig) => {
+                    setConfig({
+                        maxDepth: Number(newConfig.maxDepth),
+                        autoDepth: Boolean(newConfig.autoDepth),
+                        maxGuesses: Number(newConfig.maxGuesses) || 6,
+                        excludeUncommonWords: Boolean(newConfig.excludeUncommonWords)
+                    });
+                    setExcludedWords(tempExcludedWords);
+                    saveGameExcludedWords('hangman', tempExcludedWords);
+                }}
                 title="Hangman Settings"
                 config={config}
                 fields={settingsFields}
-            />
+            >
+                <ExcludedWordsInput
+                    words={tempExcludedWords}
+                    onChange={setTempExcludedWords}
+                />
+            </GameSettingsDialog>
         </Grid>
     );
 };

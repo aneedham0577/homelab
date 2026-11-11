@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box,
     Card,
@@ -23,6 +23,8 @@ import { PlayArrow as PlayIcon, Settings as SettingsIcon, ContentCopy as CopyIco
 import GameSettingsDialog, { FieldDefinition, DialogConfig } from './GameSettingsDialog';
 import { SpellingBeeResultState, GameStatus } from '../types/api';
 import { resultsCardContentSx, resultsCardSx, resultsColumnSx, resultsScrollBodySx } from './puzzleResultsSx';
+import ExcludedWordsInput from './ExcludedWordsInput';
+import { getGameExcludedWords, saveGameExcludedWords } from '../utils/gameExcludedWords';
 
 interface SpellingBeeDisplayProps {
     letters: string;
@@ -218,6 +220,15 @@ const SpellingBeeGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, 
         reuseLetters: true,
         allowAnyLength: false
     });
+    const [excludedWords, setExcludedWords] = useState<string[]>([]);
+    const [tempExcludedWords, setTempExcludedWords] = useState<string[]>([]);
+
+    useEffect(() => {
+        getGameExcludedWords('spellingbee').then((words) => {
+            setExcludedWords(words);
+            setTempExcludedWords(words);
+        });
+    }, []);
 
     const settingsFields: FieldDefinition[] = [
         {
@@ -290,11 +301,12 @@ const SpellingBeeGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, 
             mustIncludeFirstLetter: config.mustIncludeFirstLetter,
             reuseLetters: config.reuseLetters,
             excludeUncommonWords: config.excludeUncommonWords,
+            excludeWords: excludedWords.length > 0 ? excludedWords : undefined,
             allowAnyLength: config.allowAnyLength,
             start: 0,
             end: 100
         });
-    }, [spellingBeeLetters, config, onSolve, showError]);
+    }, [spellingBeeLetters, config, excludedWords, onSolve, showError]);
 
     const handleCopy = useCallback((text: string) => {
         navigator.clipboard.writeText(text);
@@ -408,18 +420,30 @@ const SpellingBeeGame = ({ gameStatus, isLoading, isSolving, onSolve, onCancel, 
 
                         <GameSettingsDialog
                             open={settingsOpen}
-                            onClose={() => setSettingsOpen(false)}
-                            onSave={(newConfig: DialogConfig) => setConfig({
-                                preset: Number(newConfig.preset),
-                                excludeUncommonWords: Boolean(newConfig.excludeUncommonWords),
-                                mustIncludeFirstLetter: Boolean(newConfig.mustIncludeFirstLetter),
-                                reuseLetters: Boolean(newConfig.reuseLetters),
-                                allowAnyLength: Boolean(newConfig.allowAnyLength)
-                            })}
+                            onClose={() => {
+                                setTempExcludedWords(excludedWords);
+                                setSettingsOpen(false);
+                            }}
+                            onSave={(newConfig: DialogConfig) => {
+                                setConfig({
+                                    preset: Number(newConfig.preset),
+                                    excludeUncommonWords: Boolean(newConfig.excludeUncommonWords),
+                                    mustIncludeFirstLetter: Boolean(newConfig.mustIncludeFirstLetter),
+                                    reuseLetters: Boolean(newConfig.reuseLetters),
+                                    allowAnyLength: Boolean(newConfig.allowAnyLength)
+                                });
+                                setExcludedWords(tempExcludedWords);
+                                saveGameExcludedWords('spellingbee', tempExcludedWords);
+                            }}
                             title="Spelling Bee Settings"
                             config={config}
                             fields={settingsFields}
-                        />
+                        >
+                            <ExcludedWordsInput
+                                words={tempExcludedWords}
+                                onChange={setTempExcludedWords}
+                            />
+                        </GameSettingsDialog>
                     </CardContent>
                 </Card>
             </Grid>

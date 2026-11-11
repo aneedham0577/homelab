@@ -16,7 +16,8 @@ export async function solveWordle(ctx: WordGamesContext, req: Request, res: Resp
             maxDepth = 0,
             autoDepth = false,
             maxGuesses = 6,
-            excludeUncommonWords = 0
+            excludeUncommonWords = 0,
+            excludeWords
         } = req.body;
 
         if (!req.body || typeof req.body !== 'object') {
@@ -61,6 +62,18 @@ export async function solveWordle(ctx: WordGamesContext, req: Request, res: Resp
         ];
         if (isAuto) {
             args.push('--auto-depth');
+        }
+
+        if (Array.isArray(excludeWords) && excludeWords.length > 0) {
+            const cleanList = excludeWords
+                .map((w) => String(w).trim().toLowerCase())
+                .filter((w) => /^[a-z]+$/.test(w))
+                .join(',');
+            if (cleanList) {
+                args.push(`--exclude-words ${cleanList}`);
+            }
+        } else if (typeof excludeWords === 'string' && excludeWords.trim()) {
+            args.push(`--exclude-words ${excludeWords.trim().toLowerCase()}`);
         }
 
         // Build the --guesses string: convert G/Y/X feedback to 0/1/2 numeric format

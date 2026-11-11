@@ -16,6 +16,7 @@ export async function solveLetterBoxed(ctx: WordGamesContext, req: Request, res:
             pruneRedundantPaths,
             pruneDominatedClasses,
             excludeUncommonWords,
+            excludeWords,
             start = 0,
             end = 100
         } = req.body;
@@ -49,6 +50,18 @@ export async function solveLetterBoxed(ctx: WordGamesContext, req: Request, res:
 
         if (excludeUncommonWords !== undefined) {
             args.push(`--exclude-uncommon-words ${excludeUncommonWords ? 1 : 0}`);
+        }
+
+        if (Array.isArray(excludeWords) && excludeWords.length > 0) {
+            const cleanList = excludeWords
+                .map((w) => String(w).trim().toLowerCase())
+                .filter((w) => /^[a-z]+$/.test(w))
+                .join(',');
+            if (cleanList) {
+                args.push(`--exclude-words ${cleanList}`);
+            }
+        } else if (typeof excludeWords === 'string' && excludeWords.trim()) {
+            args.push(`--exclude-words ${excludeWords.trim().toLowerCase()}`);
         }
 
         // Use preset or custom config

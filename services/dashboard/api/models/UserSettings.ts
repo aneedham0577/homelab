@@ -21,6 +21,7 @@ export interface UserSettingsData {
     homeRecentIds: string[];
     homeWidgets: HomeWidget[];
     homeCards: HomeCard[];
+    wordGameExcludedWords: Record<string, string[]>;
     [key: string]: unknown;
 }
 
@@ -33,6 +34,7 @@ const DEFAULT_USER_SETTINGS: UserSettingsData = {
     homeRecentIds: [],
     homeWidgets: defaultHomeWidgets(),
     homeCards: defaultHomeCards(),
+    wordGameExcludedWords: {},
 };
 
 class UserSettings {
@@ -69,6 +71,9 @@ class UserSettings {
         }
         if (!Array.isArray(merged.homeRecentIds)) {
             merged.homeRecentIds = [];
+        }
+        if (!merged.wordGameExcludedWords || typeof merged.wordGameExcludedWords !== 'object') {
+            merged.wordGameExcludedWords = {};
         }
         return merged;
     }
