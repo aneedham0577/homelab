@@ -36,6 +36,7 @@ import WordleGame from './WordleGame';
 import MastermindGame from './MastermindGame';
 import HangmanGame from './HangmanGame';
 import DungleonGame from './DungleonGame';
+import PoopleGame from './PoopleGame';
 import GameHelpModal from './GameHelpModal';
 import letterBoxedIcon from '../assets/letter_boxed_icon.svg';
 import spellingBeeIcon from '../assets/spelling_bee_icon.svg';
@@ -43,6 +44,7 @@ import wordleIcon from '../assets/wordle_icon.svg';
 import mastermindIcon from '../assets/mastermind_icon.svg';
 import hangmanIcon from '../assets/hangman_icon.svg';
 import dungleonIcon from '../assets/dungleon_icon.png';
+import poopleIcon from '../assets/poople_icon.svg';
 import puzzleIcon from '../assets/puzzle_icon.svg';
 import {
     LetterBoxedResultState,
@@ -51,6 +53,7 @@ import {
     MastermindResultState,
     HangmanResultState,
     DungleonResultState,
+    PoopleResultState,
     GameStatus,
     LetterBoxedResponse,
     SpellingBeeResponse,
@@ -58,13 +61,15 @@ import {
     MastermindResponse,
     HangmanResponse,
     DungleonResponse,
+    PoopleResponse,
     LoadMoreResponse,
     LetterBoxedRequest,
     SpellingBeeRequest,
     WordleRequest,
     MastermindRequest,
     HangmanRequest,
-    DungleonRequest
+    DungleonRequest,
+    PoopleRequest
 } from '../types/api';
 
 const GAME_ICONS = {
@@ -73,7 +78,8 @@ const GAME_ICONS = {
     wordle: wordleIcon,
     mastermind: mastermindIcon,
     hangman: hangmanIcon,
-    dungleon: dungleonIcon
+    dungleon: dungleonIcon,
+    poople: poopleIcon
 } as const;
 
 const GameIcon = ({
@@ -109,10 +115,11 @@ const WordGames = () => {
         'wordle': 2,
         'mastermind': 3,
         'hangman': 4,
-        'dungleon': 5
+        'dungleon': 5,
+        'poople': 6
     }), []);
 
-    const tabKeys = useMemo(() => ['letterboxed', 'spellingbee', 'wordle', 'mastermind', 'hangman', 'dungleon'], []);
+    const tabKeys = useMemo(() => ['letterboxed', 'spellingbee', 'wordle', 'mastermind', 'hangman', 'dungleon', 'poople'], []);
 
     const gameCards = useMemo(() => [
         {
@@ -155,6 +162,13 @@ const WordGames = () => {
             title: 'Dungleon',
             description: 'Narrow character patterns with entropy-guided guesses.',
             iconSrc: GAME_ICONS.dungleon,
+            color: 'primary' as const
+        },
+        {
+            key: 'poople',
+            title: 'Poople',
+            description: 'Find optimal word ladders changing one letter at a time.',
+            iconSrc: GAME_ICONS.poople,
             color: 'primary' as const
         }
     ], []);
@@ -217,6 +231,10 @@ const WordGames = () => {
         guessesWithEntropy: [],
         gameData: null
     });
+    const [poopleResults, setPoopleResults] = useState<PoopleResultState>({
+        solutions: [],
+        gameData: null
+    });
 
     const { showError, showSuccess } = useNotification();
 
@@ -262,6 +280,9 @@ const WordGames = () => {
         }
         if (gameType === 'dungleon' || gameType === 'all') {
             setDungleonResults({ possiblePatterns: [], guessesWithEntropy: [], gameData: null });
+        }
+        if (gameType === 'poople' || gameType === 'all') {
+            setPoopleResults({ solutions: [], gameData: null });
         }
     }, []);
 
@@ -446,6 +467,32 @@ const WordGames = () => {
                 });
                 const message = `Found ${response.data.possiblePatternsCount} possible patterns and ${response.data.guessesCount} suggested guesses in ${response.data.executionTime}ms`;
                 showSuccess(message);
+            } else if (gameType === 'poople') {
+                const req = gameData as PoopleRequest;
+                const response = await tryApiCall<PoopleResponse>('/wordgames/poople', {
+                    method: 'POST',
+                    data: req,
+                    timeout: 300000
+                });
+                if (isCancelledRef.current) return;
+
+                const newGameData = {
+                    startWord: response.data.startWord,
+                    endWord: response.data.endWord,
+                    totalSolutions: response.data.totalSolutions,
+                    actualTotalFound: response.data.actualTotalFound,
+                    isLimited: response.data.isLimited,
+                    executionTime: response.data.executionTime,
+                    start: response.data.start,
+                    end: response.data.end,
+                    resultsFile: response.data.resultsFile
+                };
+                setPoopleResults({
+                    solutions: response.data.solutions || [],
+                    gameData: newGameData
+                });
+                const message = `Found ${response.data.actualTotalFound} word ladder solutions in ${response.data.executionTime}ms`;
+                showSuccess(message);
             }
         } catch (error: unknown) {
             if (isCancelledRef.current) {
@@ -515,6 +562,12 @@ const WordGames = () => {
             currentCount = type === 'possible' ? dungleonResults.possiblePatterns.length : dungleonResults.guessesWithEntropy.length;
             gameMode = 'dungleon';
             fileType = type;
+        } else if (activeTab === 6) {
+            if (!poopleResults.gameData) return;
+            resultsFile = poopleResults.gameData.resultsFile;
+            currentCount = poopleResults.solutions.length;
+            gameMode = 'poople';
+            fileType = 'results';
         } else {
             return;
         }
@@ -658,6 +711,11 @@ const WordGames = () => {
                         ]
                     }));
                 }
+            } else if (activeTab === 6) {
+                setPoopleResults(prev => ({
+                    ...prev,
+                    solutions: [...prev.solutions, ...(response.data.solutionsList || [])]
+                }));
             }
 
             showSuccess(`Loaded more ${type} results`);
@@ -666,7 +724,7 @@ const WordGames = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, letterBoxedResults, spellingBeeResults, wordleResults, mastermindResults, hangmanResults, dungleonResults, showSuccess, showError]);
+    }, [activeTab, letterBoxedResults, spellingBeeResults, wordleResults, mastermindResults, hangmanResults, dungleonResults, poopleResults, showSuccess, showError]);
 
     const handleHelpOpen = useCallback(() => {
         setHelpModalOpen(true);
@@ -843,6 +901,11 @@ const WordGames = () => {
                                     <GameIcon src={GAME_ICONS.dungleon} alt="" size={20} /> Dungleon
                                 </Box>
                             </MenuItem>
+                            <MenuItem value={6}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <GameIcon src={GAME_ICONS.poople} alt="" size={20} /> Poople
+                                </Box>
+                            </MenuItem>
                         </Select>
                     </FormControl>
 
@@ -956,13 +1019,26 @@ const WordGames = () => {
                         onLoadMore={handleLoadMore}
                     />
                 )}
+                {activeTab === 6 && (
+                    <PoopleGame
+                        gameStatus={gameStatus}
+                        isLoading={isLoading}
+                        isSolving={isSolving}
+                        onSolve={handleSolve}
+                        onCancel={handleCancel}
+                        onClear={() => handleClear('poople')}
+                        showError={showError}
+                        results={poopleResults}
+                        onLoadMore={handleLoadMore}
+                    />
+                )}
             </Box>
 
             {/* Help Modal */}
             <GameHelpModal
                 open={helpModalOpen}
                 onClose={handleHelpClose}
-                gameType={activeTab === 0 ? 'letterboxed' : activeTab === 1 ? 'spellingbee' : activeTab === 2 ? 'wordle' : activeTab === 3 ? 'mastermind' : activeTab === 4 ? 'hangman' : 'dungleon'}
+                gameType={activeTab === 0 ? 'letterboxed' : activeTab === 1 ? 'spellingbee' : activeTab === 2 ? 'wordle' : activeTab === 3 ? 'mastermind' : activeTab === 4 ? 'hangman' : activeTab === 5 ? 'dungleon' : 'poople'}
             />
         </Box>
     );

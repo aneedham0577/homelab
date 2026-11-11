@@ -246,6 +246,20 @@ export interface HangmanResponse {
     resultsFile: string;
 }
 
+export interface PoopleResponse {
+    startWord: string;
+    endWord: string;
+    totalSolutions: number;
+    actualTotalFound: number;
+    isLimited: boolean;
+    executionTime: number;
+    start: number;
+    end: number;
+    solutions: string[];
+    actualResultsFile?: string;
+    resultsFile: string;
+}
+
 export interface DungleonResponse {
     possiblePatternsCount: number;
     guessesCount: number;
@@ -511,6 +525,21 @@ export interface DungleonResultState {
     } | null;
 }
 
+export interface PoopleResultState {
+    solutions: string[];
+    gameData: {
+        startWord: string;
+        endWord: string;
+        totalSolutions: number;
+        actualTotalFound: number;
+        isLimited: boolean;
+        executionTime: number;
+        start: number;
+        end: number;
+        resultsFile: string;
+    } | null;
+}
+
 export interface LetterBoxedRequest {
     letters: string;
     preset: number;
@@ -580,6 +609,17 @@ export interface DungleonRequest {
     start?: number;
     end?: number;
     resultsFile?: string;
+}
+
+export interface PoopleRequest {
+    startWord: string;
+    endWord?: string;
+    preset?: number;
+    maxDepth?: number;
+    excludeUncommonWords?: boolean;
+    maxSolutions?: number;
+    start?: number;
+    end?: number;
 }
 
 export interface OllamaStatus {

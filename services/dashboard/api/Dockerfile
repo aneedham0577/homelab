@@ -25,8 +25,9 @@ WORKDIR /build
 # Copy C++ source files
 COPY ./puzzle-plus-plus ./
 # Configure and build using mingw-core preset (add -static flag for Alpine compatibility)
+# Limit to 2 parallel compilation jobs to protect system memory on ARM/Raspberry Pi
 RUN cmake --preset mingw-core -DCMAKE_CXX_FLAGS="-static" \
-    && cmake --build --preset mingw-core --target p++
+    && cmake --build --preset mingw-core --target p++ -j 2
 RUN mv build/mingw-core/p++ build/mingw-core/p++_bin
 
 

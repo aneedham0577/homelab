@@ -182,6 +182,34 @@ router.post('/wordgames/dungleon', requireAuth('dashboard-wordgames-user'), (req
  */
 router.post('/wordgames/hangman', requireAuth('dashboard-wordgames-user'), (req: Request, res: Response) => wordGamesController.solveHangman(req, res));
 
+// Poople solver endpoint
+/**
+ * @openapi
+ * /api/wordgames/poople:
+ *   post:
+ *     summary: Solve Poople word ladder puzzle
+ *     tags: [WordGames]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - startWord
+ *             properties:
+ *               startWord:
+ *                 type: string
+ *               endWord:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Solutions payload
+ */
+router.post('/wordgames/poople', requireAuth('dashboard-wordgames-user'), (req: Request, res: Response) => wordGamesController.solvePoople(req, res));
+
 // Load results from file (pagination) - supports all game types
 /**
  * @openapi

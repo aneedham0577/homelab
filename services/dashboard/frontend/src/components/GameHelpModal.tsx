@@ -380,6 +380,51 @@ const GameHelpModal = ({ open, onClose, gameType }: GameHelpModalProps) => {
                     )
                 };
 
+            case 'poople':
+                return {
+                    title: 'Poople (Word Ladder) Help',
+                    content: (
+                        <Box>
+                            <Typography variant="h6" gutterBottom>How to Play:</Typography>
+                            <List dense>
+                                <ListItem>
+                                    <ListItemText primary="Transform the starting word into the target word (e.g. POOP) one step at a time." />
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemText primary="Each step must differ by exactly one letter from the previous word." />
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemText primary="Every intermediate word must be a valid dictionary word." />
+                                </ListItem>
+                            </List>
+
+                            <Divider sx={{ my: 2 }} />
+
+                            <Typography variant="h6" gutterBottom>Configuration & Sorting:</Typography>
+                            <List dense>
+                                <ListItem>
+                                    <ListItemText
+                                        primary="Depth Limit"
+                                        secondary="Default limit of 10 words per ladder path. Configurable in settings."
+                                    />
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemText
+                                        primary="Exclude Uncommon Words"
+                                        secondary="Default enabled. Excludes obscure dictionary words to favor familiar English solutions."
+                                    />
+                                </ListItem>
+                                <ListItem>
+                                    <ListItemText
+                                        primary="Ranking Order"
+                                        secondary="Solutions are sorted first by shortest word length ascending, with ties broken by the highest minimum word score."
+                                    />
+                                </ListItem>
+                            </List>
+                        </Box>
+                    )
+                };
+
             default:
                 return {
                     title: 'Puzzle++ Help',

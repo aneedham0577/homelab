@@ -6,6 +6,7 @@ import { solveWordle } from './games/wordle';
 import { solveMastermind } from './games/mastermind';
 import { solveHangman } from './games/hangman';
 import { solveDungleon } from './games/dungleon';
+import { solvePoople } from './games/poople';
 import { loadResults } from './loadResults';
 
 class WordGamesController {
@@ -37,6 +38,10 @@ class WordGamesController {
 
     async solveHangman(req: Request, res: Response) {
         return solveHangman(this.ctx, req, res);
+    }
+
+    async solvePoople(req: Request, res: Response) {
+        return solvePoople(this.ctx, req, res);
     }
 
     async loadResults(req: Request, res: Response) {
