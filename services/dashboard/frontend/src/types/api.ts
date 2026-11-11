@@ -615,6 +615,8 @@ export interface PoopleRequest {
     startWord: string;
     endWord?: string;
     preset?: number;
+    minWords?: number;
+    maxWords?: number;
     maxDepth?: number;
     excludeUncommonWords?: boolean;
     maxSolutions?: number;

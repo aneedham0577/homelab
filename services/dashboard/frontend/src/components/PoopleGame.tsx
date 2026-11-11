@@ -36,7 +36,8 @@ import { PoopleResultState, GameStatus, PoopleRequest } from '../types/api';
 import { resultsCardContentSx, resultsCardSx, resultsColumnSx, resultsScrollBodySx } from './puzzleResultsSx';
 
 interface PresetConfig {
-    maxDepth: number;
+    minWords: number;
+    maxWords: number;
     maxSolutions: number;
 }
 
@@ -184,7 +185,8 @@ const PoopleGame = ({
 
     const [config, setConfig] = useState<GameConfig>({
         preset: 1,
-        maxDepth: 10,
+        minWords: 2,
+        maxWords: 10,
         maxSolutions: 1000,
         excludeUncommonWords: true
     });
@@ -192,9 +194,9 @@ const PoopleGame = ({
 
     // Preset configurations matching Letter Boxed pattern
     const presetConfigs = useMemo<Record<number, PresetConfig>>(() => ({
-        1: { maxDepth: 10, maxSolutions: 1000 },
-        2: { maxDepth: 10, maxSolutions: 100 },
-        3: { maxDepth: 10, maxSolutions: 1000 }
+        1: { minWords: 2, maxWords: 10, maxSolutions: 1000 },
+        2: { minWords: 2, maxWords: 10, maxSolutions: 100 },
+        3: { minWords: 2, maxWords: 10, maxSolutions: 1000 }
     }), []);
 
     const getCurrentConfig = useCallback((): GameConfig => {
@@ -244,7 +246,8 @@ const PoopleGame = ({
             endWord: effectiveEnd,
             preset: config.preset,
             excludeUncommonWords: config.excludeUncommonWords,
-            maxDepth: currentConfig.maxDepth,
+            minWords: currentConfig.minWords,
+            maxWords: currentConfig.maxWords,
             maxSolutions: currentConfig.maxSolutions,
             start: 0,
             end: 100
@@ -297,10 +300,22 @@ const PoopleGame = ({
     const handleSaveSettings = () => {
         const finalConfig = { ...tempConfig };
         if (finalConfig.preset === 0) {
-            let maxD = parseInt(String(finalConfig.maxDepth), 10);
-            if (isNaN(maxD) || maxD < 2) maxD = config.maxDepth || 10;
-            else if (maxD > 20) maxD = 20;
-            finalConfig.maxDepth = maxD;
+            let minW = parseInt(String(finalConfig.minWords), 10);
+            if (isNaN(minW) || minW < 2) minW = config.minWords || 2;
+            else if (minW > 20) minW = 20;
+
+            let maxW = parseInt(String(finalConfig.maxWords), 10);
+            if (isNaN(maxW) || maxW < 2) maxW = config.maxWords || 10;
+            else if (maxW > 20) maxW = 20;
+
+            if (minW > maxW) {
+                const tmp = minW;
+                minW = maxW;
+                maxW = tmp;
+            }
+
+            finalConfig.minWords = minW;
+            finalConfig.maxWords = maxW;
 
             let maxS = parseInt(String(finalConfig.maxSolutions), 10);
             if (isNaN(maxS) || maxS < 10) maxS = config.maxSolutions || 1000;
@@ -466,31 +481,62 @@ const PoopleGame = ({
                                         </Typography>
 
                                         <Grid container spacing={1.5}>
-                                            <Grid size={12}>
+                                            <Grid size={6}>
                                                 <TextField
-                                                    label="Max Depth (Words)"
+                                                    label="Min Words"
                                                     type="number"
                                                     size="small"
-                                                    value={tempConfigRecord.maxDepth === undefined || tempConfigRecord.maxDepth === '' ? '' : (tempConfigRecord.maxDepth as number)}
+                                                    value={tempConfigRecord.minWords === undefined || tempConfigRecord.minWords === '' ? '' : (tempConfigRecord.minWords as number)}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
                                                         if (val === '') {
-                                                            handleTempConfigChange('maxDepth', '');
+                                                            handleTempConfigChange('minWords', '');
                                                         } else {
                                                             const num = parseInt(val, 10);
                                                             if (!isNaN(num)) {
-                                                                handleTempConfigChange('maxDepth', num);
+                                                                handleTempConfigChange('minWords', num);
                                                             }
                                                         }
                                                     }}
                                                     onBlur={() => {
-                                                        let num = parseInt(String(tempConfig.maxDepth), 10);
+                                                        let num = parseInt(String(tempConfig.minWords), 10);
                                                         if (isNaN(num)) {
-                                                            num = config.maxDepth || 10;
+                                                            num = config.minWords || 2;
                                                         } else {
                                                             num = Math.max(2, Math.min(20, num));
                                                         }
-                                                        handleTempConfigChange('maxDepth', num);
+                                                        handleTempConfigChange('minWords', num);
+                                                    }}
+                                                    fullWidth
+                                                    disabled={!isCustom}
+                                                    slotProps={{ htmlInput: { min: 2, max: 20 } }}
+                                                />
+                                            </Grid>
+                                            <Grid size={6}>
+                                                <TextField
+                                                    label="Max Words"
+                                                    type="number"
+                                                    size="small"
+                                                    value={tempConfigRecord.maxWords === undefined || tempConfigRecord.maxWords === '' ? '' : (tempConfigRecord.maxWords as number)}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val === '') {
+                                                            handleTempConfigChange('maxWords', '');
+                                                        } else {
+                                                            const num = parseInt(val, 10);
+                                                            if (!isNaN(num)) {
+                                                                handleTempConfigChange('maxWords', num);
+                                                            }
+                                                        }
+                                                    }}
+                                                    onBlur={() => {
+                                                        let num = parseInt(String(tempConfig.maxWords), 10);
+                                                        if (isNaN(num)) {
+                                                            num = config.maxWords || 10;
+                                                        } else {
+                                                            num = Math.max(2, Math.min(20, num));
+                                                        }
+                                                        handleTempConfigChange('maxWords', num);
                                                     }}
                                                     fullWidth
                                                     disabled={!isCustom}

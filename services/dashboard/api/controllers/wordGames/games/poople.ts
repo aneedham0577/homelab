@@ -11,7 +11,9 @@ export async function solvePoople(ctx: WordGamesContext, req: Request, res: Resp
             startWord,
             endWord = 'poop',
             preset = 1,
-            maxDepth = 10,
+            minWords = 2,
+            maxWords = 10,
+            maxDepth,
             excludeUncommonWords = true,
             maxSolutions = 1000,
             start = 0,
@@ -64,13 +66,19 @@ export async function solvePoople(ctx: WordGamesContext, req: Request, res: Resp
         if (presetVal >= 1 && presetVal <= 3) {
             args.push(`--preset ${presetVal}`);
         } else {
-            if (maxDepth !== undefined) args.push(`--max-depth ${parseInt(maxDepth)}`);
+            const effectiveMax = maxWords !== undefined ? maxWords : maxDepth;
+            if (minWords !== undefined) args.push(`--min-words ${parseInt(minWords)}`);
+            if (effectiveMax !== undefined) args.push(`--max-words ${parseInt(effectiveMax)}`);
             if (maxSolutions !== undefined) args.push(`--max-solutions ${parseInt(maxSolutions)}`);
         }
 
         // Specific overrides take priority
-        if (req.body.maxDepth !== undefined && presetVal !== 0) {
-            args.push(`--max-depth ${parseInt(maxDepth)}`);
+        if (req.body.minWords !== undefined && presetVal !== 0) {
+            args.push(`--min-words ${parseInt(minWords)}`);
+        }
+        if ((req.body.maxWords !== undefined || req.body.maxDepth !== undefined) && presetVal !== 0) {
+            const effectiveMax = req.body.maxWords !== undefined ? req.body.maxWords : req.body.maxDepth;
+            args.push(`--max-words ${parseInt(effectiveMax)}`);
         }
 
         const command = args.join(' ');
